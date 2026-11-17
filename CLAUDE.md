@@ -3,16 +3,12 @@
 Personal inventory of the multimedia items the owner has: movies, video games, books and
 TV series. This repository holds the **specification and the process**: the data definition,
 its decisions (ADRs), the rules below and the agents. The data itself lives in a separate
-repository, **`media-shelf-data`** (ADR-0008); the tooling in **`media-shelf-ui`**.
+repository, **`media-shelf-data`** (ADR-0008), described by its own README; the tooling in
+**`media-shelf-ui`**. [`README.md`](README.md) is the overview for people (what each
+repository holds, how to build the tools); this file holds the rules for working here.
 
-| Repository | Holds |
-|---|---|
-| `media-shelf` (this one) | `schema/schema.json`, `docs/csv-schema.md`, `docs/adr/`, `agents/`, these rules |
-| `media-shelf-data` | `data/` (the CSV files, `review_queue.csv` and the manifest `shelf.json`: the *data folder*), `README.md` (its only description, ADR-0009), the git-ignored `.source/`: photos in `pending/` and `review/` (ADR-0010) and review requests in `requests/` (ADR-0011) |
-| `media-shelf-ui` | Web interface and reference validator (`media-shelf-ui validate`) |
-
-The three folders sit side by side, in one common folder, on the owner's computer, but no
-tool assumes it: locations are configuration.
+The three repositories sit in one common folder on the owner's computer, but no tool assumes
+it: locations are configuration.
 
 ## Layout of this repository
 
@@ -23,6 +19,7 @@ tool assumes it: locations are configuration.
 | `docs/adr/` | Architecture Decision Records for every change to that definition. |
 | `docs/review-requests.md` | Request/proposal contract between the owner's tools and reviewers (ADR-0011). |
 | `tools/reviewers/` | Optional reviewer adapters a media-shelf-ui notifier can run (e.g. `claude-review/`: a Go program, ADR-0012, that answers a request with a proposal using Claude Code read-only). |
+| `README.md` | Overview for people: the three repositories, the definition, the agents, building claude-review. |
 | `agents/` | Source of the project agents (`media-cataloger`, `media-auditor`, `media-reviewer`). |
 | `scripts/migrations/` | Data migrations, one Go program per schema change (`adr_0013_actors/`, ADR-0013); run once, kept as history. The earlier Python ones (ADR-0003 to ADR-0005) and the retired Python validator (ADR-0006) were removed. |
 
