@@ -1,0 +1,535 @@
+{
+  "$comment": "Machine-readable definition of the media-shelf data files (kept in the data/ folder of the separate media-shelf-data repository, ADR-0008, ADR-0010). File names are relative to that data folder. Single source of truth for tools (validator, UI). Human-readable rules: docs/csv-schema.md. Changes require an ADR.",
+  "version": "ADR-0013",
+  "file_conventions": {
+    "encoding": "utf-8",
+    "bom": false,
+    "delimiter": ",",
+    "list_separator": "|",
+    "line_terminator": "\n"
+  },
+  "core_columns": [
+    {
+      "name": "id",
+      "type": "id",
+      "required": true,
+      "description": "<PREFIX>-<NNNN>, sequential per file, unique across files, never reused"
+    },
+    {
+      "name": "original_title",
+      "type": "text",
+      "required": true,
+      "description": "Title of the original release in its original language (romanized for non-Latin scripts)"
+    },
+    {
+      "name": "edition_title",
+      "type": "text",
+      "required": true,
+      "description": "Title as printed on the owned copy, standard capitalization"
+    },
+    {
+      "name": "synopsis",
+      "type": "text",
+      "required": false,
+      "description": "1-2 sentences in English, own words"
+    },
+    {
+      "name": "genre",
+      "type": "list",
+      "required": false,
+      "description": "English, lowercase, hyphenated, canonical",
+      "style": "kebab",
+      "synonyms": "genre_synonyms"
+    },
+    {
+      "name": "creator",
+      "type": "list",
+      "required": false,
+      "description": "Director / developer studio / author / showrunner"
+    },
+    {
+      "name": "formats",
+      "type": "list",
+      "required": true,
+      "values": "formats",
+      "description": "Owned formats from the media type's vocabulary"
+    },
+    {
+      "name": "release_date",
+      "type": "date",
+      "required": false,
+      "description": "Original first release, YYYY-MM-DD or YYYY",
+      "allow_year_only": true
+    },
+    {
+      "name": "consumed",
+      "type": "boolean",
+      "required": true,
+      "description": "true = watched/played/read"
+    },
+    {
+      "name": "condition",
+      "type": "integer",
+      "required": false,
+      "min": 1,
+      "max": 5,
+      "scale": "condition_scale",
+      "description": "Physical wear; empty for digital-only items"
+    },
+    {
+      "name": "missing_items",
+      "type": "list",
+      "required": false,
+      "values": "missing_items",
+      "description": "Missing pieces; empty = complete"
+    },
+    {
+      "name": "rating",
+      "type": "integer",
+      "required": false,
+      "min": 1,
+      "max": 10,
+      "description": "Personal rating; only when consumed"
+    },
+    {
+      "name": "tags",
+      "type": "list",
+      "required": false,
+      "description": "English, lowercase, hyphenated, canonical; never repeat a genre of the row",
+      "style": "kebab",
+      "synonyms": "tag_synonyms",
+      "forbidden": "forbidden_tags"
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "required": false,
+      "description": "Free notes in English"
+    },
+    {
+      "name": "reviewed",
+      "type": "boolean",
+      "required": true,
+      "description": "true only when the owner confirmed the row"
+    }
+  ],
+  "media_types": {
+    "movie": {
+      "label": "Movies",
+      "file": "movies.csv",
+      "id_prefix": "MOV",
+      "formats": [
+        "DVD",
+        "Blu-ray",
+        "4K UHD",
+        "VHS",
+        "Digital"
+      ],
+      "extra_columns": [
+        {
+          "name": "actors",
+          "type": "list",
+          "required": false,
+          "description": "Main original cast in billing order, full names as credited; voice actors for animation and video games (original performances only, no dubbing)"
+        }
+      ]
+    },
+    "video_game": {
+      "label": "Video games",
+      "file": "video_games.csv",
+      "id_prefix": "GAM",
+      "formats": [
+        "Physical",
+        "Digital"
+      ],
+      "extra_columns": [
+        {
+          "name": "platform",
+          "type": "list",
+          "required": true,
+          "values": "platforms",
+          "description": "Platforms of the owned copies"
+        },
+        {
+          "name": "actors",
+          "type": "list",
+          "required": false,
+          "description": "Main original cast in billing order, full names as credited; voice actors for animation and video games (original performances only, no dubbing)"
+        }
+      ]
+    },
+    "book": {
+      "label": "Books",
+      "file": "books.csv",
+      "id_prefix": "BOK",
+      "formats": [
+        "Paperback",
+        "Hardcover",
+        "eBook",
+        "Audiobook"
+      ],
+      "extra_columns": [
+        {
+          "name": "isbn",
+          "type": "isbn",
+          "required": false,
+          "description": "ISBN-10 or ISBN-13, digits only"
+        },
+        {
+          "name": "publisher",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "pages",
+          "type": "integer",
+          "required": false,
+          "min": 1
+        }
+      ]
+    },
+    "series": {
+      "label": "Series",
+      "file": "series.csv",
+      "id_prefix": "SER",
+      "formats": [
+        "DVD",
+        "Blu-ray",
+        "4K UHD",
+        "VHS",
+        "Digital"
+      ],
+      "extra_columns": [
+        {
+          "name": "series_type",
+          "type": "enum",
+          "required": true,
+          "values": "series_types"
+        },
+        {
+          "name": "seasons",
+          "type": "list",
+          "required": false,
+          "item_type": "integer",
+          "min": 1,
+          "description": "Owned season numbers; empty for miniseries"
+        },
+        {
+          "name": "actors",
+          "type": "list",
+          "required": false,
+          "description": "Main original cast in billing order, full names as credited; voice actors for animation and video games (original performances only, no dubbing)"
+        }
+      ]
+    }
+  },
+  "vocabularies": {
+    "digital_formats": [
+      "Digital",
+      "eBook",
+      "Audiobook"
+    ],
+    "missing_items": {
+      "box": [
+        "movie",
+        "series",
+        "video_game"
+      ],
+      "manual": [
+        "video_game"
+      ],
+      "cover_art": [
+        "movie",
+        "series",
+        "video_game"
+      ],
+      "disc": [
+        "movie",
+        "series",
+        "video_game"
+      ],
+      "extra_disc": [
+        "movie",
+        "series",
+        "video_game"
+      ],
+      "slipcover": [
+        "movie",
+        "series",
+        "video_game"
+      ],
+      "inserts": [
+        "movie",
+        "series",
+        "video_game"
+      ],
+      "code": [
+        "video_game"
+      ],
+      "dust_jacket": [
+        "book"
+      ],
+      "pages": [
+        "book"
+      ],
+      "other": [
+        "movie",
+        "series",
+        "video_game",
+        "book"
+      ]
+    },
+    "condition_scale": {
+      "5": "New / sealed",
+      "4": "Like new",
+      "3": "Good (light wear)",
+      "2": "Fair (visible wear, complete)",
+      "1": "Poor (damaged or incomplete)"
+    },
+    "platforms": [
+      "PS1",
+      "PS2",
+      "PS3",
+      "PS4",
+      "PS5",
+      "PSP",
+      "PS Vita",
+      "Xbox",
+      "Xbox 360",
+      "Xbox One",
+      "Xbox Series X/S",
+      "NES",
+      "SNES",
+      "N64",
+      "GameCube",
+      "Wii",
+      "Wii U",
+      "Switch",
+      "Switch 2",
+      "Game Boy",
+      "Game Boy Color",
+      "Game Boy Advance",
+      "DS",
+      "3DS",
+      "Master System",
+      "Mega Drive",
+      "Saturn",
+      "Dreamcast",
+      "PC",
+      "Mac"
+    ],
+    "series_types": [
+      "series",
+      "miniseries"
+    ],
+    "genre_synonyms": {
+      "action-role-playing": "action-rpg",
+      "history": "historical",
+      "sport": "sports"
+    },
+    "tag_synonyms": {
+      "based-on-true-events": "based-on-true-story",
+      "true-story": "based-on-true-story",
+      "biographical": "biopic",
+      "biography": "biopic",
+      "antihero": "anti-hero",
+      "alien": "aliens",
+      "assassin": "assassins",
+      "con-artist": "con-artists",
+      "creature": "monsters",
+      "creatures": "monsters",
+      "monster": "monsters",
+      "gangster": "gangsters",
+      "ensemble": "ensemble-cast",
+      "period": "period-piece",
+      "palme-d'or": "palme-d-or",
+      "lovecraftian": "h-p-lovecraft",
+      "lovecraft": "h-p-lovecraft",
+      "wwii": "world-war-ii",
+      "spoof": "parody",
+      "cult-classic": "cult",
+      "dc-comics": "dc",
+      "comic-book": "comic-adaptation",
+      "french": "french-cinema",
+      "british": "british-cinema",
+      "hong-kong-cinema": "hong-kong",
+      "spielberg": "steven-spielberg",
+      "nolan": "christopher-nolan",
+      "tarantino": "quentin-tarantino",
+      "kubrick": "stanley-kubrick",
+      "asimov": "isaac-asimov",
+      "dickens": "charles-dickens",
+      "dumas": "alexandre-dumas",
+      "stevenson": "robert-louis-stevenson",
+      "tolkien": "j-r-r-tolkien",
+      "50s": "1950s",
+      "60s": "1960s",
+      "70s": "1970s",
+      "80s": "1980s",
+      "90s": "1990s",
+      "90s-action": "1990s"
+    },
+    "forbidden_tags": [
+      "box-set",
+      "adam-sandler",
+      "al-pacino",
+      "arnold-schwarzenegger",
+      "bill-murray",
+      "bob-odenkirk",
+      "brad-pitt",
+      "bruce-willis",
+      "bud-spencer",
+      "cantinflas",
+      "charlie-chaplin",
+      "charlie-sheen",
+      "charlton-heston",
+      "christian-bale",
+      "christopher-lee",
+      "clint-eastwood",
+      "daniel-day-lewis",
+      "dean-martin",
+      "denzel-washington",
+      "eddie-murphy",
+      "jackie-chan",
+      "jerry-lewis",
+      "jet-li",
+      "jim-carrey",
+      "john-wayne",
+      "julia-roberts",
+      "keanu-reeves",
+      "kevin-costner",
+      "kurt-russell",
+      "leslie-nielsen",
+      "martin-lawrence",
+      "mel-gibson",
+      "michael-douglas",
+      "nicolas-cage",
+      "rob-schneider",
+      "robert-de-niro",
+      "robin-williams",
+      "ryan-gosling",
+      "sacha-baron-cohen",
+      "sean-connery",
+      "stephen-chow",
+      "sylvester-stallone",
+      "terence-hill",
+      "tom-cruise",
+      "tom-hanks",
+      "van-damme",
+      "viggo-mortensen",
+      "vin-diesel",
+      "will-ferrell"
+    ]
+  },
+  "identifying_fields": [
+    "original_title",
+    "edition_title",
+    "creator",
+    "release_date",
+    "formats"
+  ],
+  "review_queue": {
+    "file": "review_queue.csv",
+    "id_prefix": "REV",
+    "columns": [
+      {
+        "name": "id",
+        "type": "id",
+        "required": true
+      },
+      {
+        "name": "status",
+        "type": "enum",
+        "required": true,
+        "values": "statuses"
+      },
+      {
+        "name": "reason",
+        "type": "enum",
+        "required": true,
+        "values": "reasons"
+      },
+      {
+        "name": "media_type",
+        "type": "enum",
+        "required": false,
+        "values": "media_types"
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "question",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "candidates",
+        "type": "list",
+        "required": false
+      },
+      {
+        "name": "photo",
+        "type": "list",
+        "required": false
+      },
+      {
+        "name": "location",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "related_ids",
+        "type": "list",
+        "required": false,
+        "references": "data_ids"
+      },
+      {
+        "name": "created",
+        "type": "date",
+        "required": true
+      },
+      {
+        "name": "resolved",
+        "type": "date",
+        "required": false
+      },
+      {
+        "name": "resolution",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "notes",
+        "type": "text",
+        "required": false
+      }
+    ],
+    "statuses": [
+      "open",
+      "resolved",
+      "discarded"
+    ],
+    "reasons": {
+      "unidentified": "Cannot tell what the item is.",
+      "ambiguous": "Several candidates (e.g. original vs remake).",
+      "box_set_contents": "The contents of a set are not visible.",
+      "needs_check": "A row's data is inferred and must be confirmed on the physical item.",
+      "schema_gap": "Does not fit the schema; needs an ADR.",
+      "needs_photo": "Not visible enough; needs a new photo."
+    }
+  },
+  "manifest": {
+    "file": "shelf.json",
+    "required": true,
+    "fields": {
+      "schema_version": {
+        "type": "text",
+        "required": true,
+        "description": "Version of schema.json the data conforms to; must equal this file's version"
+      }
+    }
+  }
+}
