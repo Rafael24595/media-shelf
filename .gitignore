@@ -1,0 +1,5 @@
+# executables of the Go tools, built locally (ADR-0012)
+tools/reviewers/claude-review/dist/
+
+# leftovers of files deleted while open on a shared (FUSE) folder
+.fuse_hidden*
