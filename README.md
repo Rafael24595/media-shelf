@@ -59,9 +59,10 @@ agents, copy them to `.claude/agents/`.
 ### claude-review
 
 [`tools/reviewers/claude-review`](tools/reviewers/claude-review) answers a review request
-without anyone at the keyboard: media-shelf-ui runs it when a request is created, and it
-writes the proposal into the request. It is a Go program using only the standard library, and
-needs Claude Code installed and signed in (each run uses the owner's Claude plan).
+without anyone at the keyboard: when the owner asks Claude for a catalog or a review from
+media-shelf-ui, it runs this program, which writes the proposal into the request. It is a Go
+program using only the standard library, and needs Claude Code installed and signed in (each
+run uses the owner's Claude plan).
 
 Build it into `dist/` (git-ignored), from `tools/reviewers/claude-review`:
 
