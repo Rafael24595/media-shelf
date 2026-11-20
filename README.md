@@ -61,8 +61,8 @@ agents, copy them to `.claude/agents/`.
 [`tools/reviewers/claude-review`](tools/reviewers/claude-review) answers a review request
 without anyone at the keyboard: when the owner asks Claude for a catalog or a review from
 media-shelf-ui, it runs this program, which writes the proposal into the request. It is a Go
-program using only the standard library, and needs Claude Code installed and signed in (each
-run uses the owner's Claude plan).
+program using only the standard library (its tests use go-assert, ADR-0014), and needs Claude
+Code installed and signed in (each run uses the owner's Claude plan).
 
 Build it into `dist/` (git-ignored), from `tools/reviewers/claude-review`:
 

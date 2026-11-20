@@ -1,6 +1,6 @@
 # ADR-0012: Claude reviewer adapter in Go
 
-- **Status:** Accepted
+- **Status:** Accepted (partially superseded by ADR-0014)
 - **Date:** 2026-11-16
 
 ## Context

@@ -19,8 +19,9 @@ in an ADR before it is applied.
 | [0009](0009-self-contained-data-repository.md) | Self-contained data repository without archive copies | Accepted (partially superseded by ADR-0010) | 2026-11-10 |
 | [0010](0010-data-folder-and-photo-sources.md) | Data folder and photo sources in the data repository | Accepted | 2026-11-10 |
 | [0011](0011-review-requests-and-proposals.md) | Review requests and proposals | Accepted | 2026-11-10 |
-| [0012](0012-claude-reviewer-adapter-in-go.md) | Claude reviewer adapter in Go | Accepted | 2026-11-16 |
+| [0012](0012-claude-reviewer-adapter-in-go.md) | Claude reviewer adapter in Go | Accepted (partially superseded by ADR-0014) | 2026-11-16 |
 | [0013](0013-actors-column.md) | `actors` column for movies, video games and series | Accepted | 2026-11-16 |
+| [0014](0014-go-assert-in-go-tests.md) | go-assert in the tests of the Go programs | Accepted | 2026-11-18 |
 
 ## Process
 
