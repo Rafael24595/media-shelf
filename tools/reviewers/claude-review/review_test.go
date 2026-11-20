@@ -6,10 +6,12 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Rafael24595/go-assert/assert"
+	"github.com/Rafael24595/go-assert/require"
 )
 
 var fixedNow = time.Date(2026, 11, 16, 9, 30, 0, 0, time.FixedZone("CET", 3600))
@@ -18,15 +20,11 @@ var fixedNow = time.Date(2026, 11, 16, 9, 30, 0, 0, time.FixedZone("CET", 3600))
 func setup(t *testing.T, status string) string {
 	t.Helper()
 	dir := filepath.Join(t.TempDir(), "data", ".source", "requests")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, os.MkdirAll(dir, 0o755))
 	path := filepath.Join(dir, "REQ-20261116-093000.json")
 	body := `{"contract":"media-shelf-request/1","id":"REQ-20261116-093000","kind":"catalog","status":"` + status +
 		`","photos":["a.jpg"],"notifications":[{"notifier":"Claude","ok":true}],"custom":"kept"}`
-	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, os.WriteFile(path, []byte(body), 0o644))
 	return path
 }
 
@@ -57,13 +55,9 @@ func job(path string, run runner) reviewJob {
 func read(t *testing.T, path string) map[string]any {
 	t.Helper()
 	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
 	var m map[string]any
-	if err := json.Unmarshal(data, &m); err != nil {
-		t.Fatalf("request is not JSON: %v\n%s", err, data)
-	}
+	require.Nil(t, json.Unmarshal(data, &m), "request is not JSON:\n%s", data)
 	return m
 }
 
@@ -72,46 +66,43 @@ func TestAProposalIsWrittenIntoTheRequest(t *testing.T) {
 	var calls []call
 	msg := "Here it is:\n" + `{"summary":"One film.","operations":[{"op":"add_row","media":"movie","fields":{"edition_title":"Alien"}}]}`
 	out, err := job(path, fake(answer(msg), "", 0, nil, &calls)).do(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if out.failed || out.message != "REQ-20261116-093000: proposal with 1 operation(s)." {
-		t.Errorf("outcome: %+v", out)
-	}
+	require.Nil(t, err)
+	assert.False(t, out.failed)
+	assert.Equal(t, "REQ-20261116-093000: proposal with 1 operation(s).", out.message)
+
 	r := read(t, path)
-	if r["status"] != "proposed" || r["claimed_by"] != reviewer || r["claimed_at"] != "2026-11-16T09:30:00+01:00" {
-		t.Errorf("claim: %v %v %v", r["status"], r["claimed_by"], r["claimed_at"])
-	}
+	assert.DeepEqual(t, "proposed", r["status"])
+	assert.DeepEqual(t, reviewer, r["claimed_by"])
+	assert.DeepEqual(t, "2026-11-16T09:30:00+01:00", r["claimed_at"])
+
 	p := r["proposal"].(map[string]any)
-	if p["summary"] != "One film." || p["by"] != reviewer || p["at"] != "2026-11-16T09:30:00+01:00" || len(p["operations"].([]any)) != 1 {
-		t.Errorf("proposal: %v", p)
-	}
-	if r["custom"] != "kept" || r["notifications"] == nil {
-		t.Errorf("fields the adapter does not know were lost: %v", r)
-	}
+	assert.DeepEqual(t, "One film.", p["summary"])
+	assert.DeepEqual(t, reviewer, p["by"])
+	assert.DeepEqual(t, "2026-11-16T09:30:00+01:00", p["at"])
+	assert.Size(t, 1, p["operations"], "operations")
+
+	assert.DeepEqual(t, "kept", r["custom"], "fields the adapter does not know are kept")
+	assert.NotNil(t, r["notifications"], "fields the adapter does not know are kept")
 }
 
 func TestClaudeCodeIsRunReadOnlyWithTheDataRepository(t *testing.T) {
 	path := setup(t, "pending")
 	var calls []call
-	if _, err := job(path, fake(answer(`{"operations":[]}`), "", 0, nil, &calls)).do(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	if len(calls) != 1 {
-		t.Fatalf("calls: %v", calls)
-	}
+	_, err := job(path, fake(answer(`{"operations":[]}`), "", 0, nil, &calls)).do(context.Background())
+	require.Nil(t, err)
+	require.Size(t, 1, calls, "calls: %v", calls)
+
 	c := calls[0]
 	data := filepath.Dir(filepath.Dir(filepath.Dir(path)))
 	wantPrompt := "Read " + filepath.Join("/repos/media-shelf", "tools", "reviewers", "review-prompt.md") + " and follow it for the request file " + path
 	want := []string{"-p", wantPrompt, "--output-format", "json", "--permission-mode", "dontAsk",
 		"--allowedTools", "Read,Glob,Grep,WebSearch,WebFetch,Agent", "--add-dir", data}
-	if c.dir != "/repos/media-shelf" || c.name != "claude" || !slices.Equal(c.args, want) {
-		t.Errorf("run in %s: %s %q\nwant %q", c.dir, c.name, c.args, want)
-	}
+	assert.Equal(t, "/repos/media-shelf", c.dir)
+	assert.Equal(t, "claude", c.name)
+	assert.DeepEqual(t, want, c.args)
+
 	for _, tool := range strings.Split(readOnlyTools, ",") {
-		if tool == "Write" || tool == "Edit" || tool == "Bash" || tool == "NotebookEdit" {
-			t.Errorf("a tool that writes is allowed: %s", tool)
-		}
+		assert.NotInside(t, tool, []string{"Write", "Edit", "Bash", "NotebookEdit"}, "a tool that writes is allowed")
 	}
 }
 
@@ -119,9 +110,8 @@ func TestAnEmptyProposalIsStillAProposal(t *testing.T) {
 	path := setup(t, "pending")
 	var calls []call
 	out, _ := job(path, fake(answer(`{"summary":"Nothing new.","operations":[]}`), "", 0, nil, &calls)).do(context.Background())
-	if out.failed || read(t, path)["status"] != "proposed" {
-		t.Errorf("outcome %+v, status %v", out, read(t, path)["status"])
-	}
+	assert.False(t, out.failed, "outcome %+v", out)
+	assert.DeepEqual(t, "proposed", read(t, path)["status"])
 }
 
 func TestARequestThatIsNotPendingIsLeftAlone(t *testing.T) {
@@ -131,12 +121,11 @@ func TestARequestThatIsNotPendingIsLeftAlone(t *testing.T) {
 		var calls []call
 		out, err := job(path, fake("", "", 0, nil, &calls)).do(context.Background())
 		after, _ := os.ReadFile(path)
-		if err != nil || out.failed || len(calls) != 0 || string(before) != string(after) {
-			t.Errorf("%s: err %v, outcome %+v, calls %d, changed %v", status, err, out, len(calls), string(before) != string(after))
-		}
-		if !strings.Contains(out.message, "is "+status+": nothing to do") {
-			t.Errorf("%s: message %q", status, out.message)
-		}
+		assert.Nil(t, err, status)
+		assert.False(t, out.failed, "%s: outcome %+v", status, out)
+		assert.Size(t, 0, calls, "%s: Claude Code is not run", status)
+		assert.Equal(t, string(before), string(after), "%s: the request is not changed", status)
+		assert.Inside(t, "is "+status+": nothing to do", out.message, status)
 	}
 }
 
@@ -163,17 +152,14 @@ func TestFailuresAreWrittenIntoTheRequest(t *testing.T) {
 			path := setup(t, "pending")
 			var calls []call
 			out, err := job(path, fake(c.stdout, c.stderr, c.code, c.err, &calls)).do(context.Background())
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.Nil(t, err)
 			r := read(t, path)
 			failure, _ := r["failure"].(string)
-			if !out.failed || r["status"] != "failed" || !strings.Contains(failure, c.why) {
-				t.Errorf("outcome %+v, status %v, failure %q; want it to contain %q", out, r["status"], failure, c.why)
-			}
-			if r["proposal"] != nil || r["custom"] != "kept" {
-				t.Errorf("request after failing: %v", r)
-			}
+			assert.True(t, out.failed, "outcome %+v", out)
+			assert.DeepEqual(t, "failed", r["status"])
+			assert.Inside(t, c.why, failure)
+			assert.Nil(t, r["proposal"], "no proposal after failing")
+			assert.DeepEqual(t, "kept", r["custom"], "fields the adapter does not know are kept")
 		})
 	}
 }
@@ -187,37 +173,25 @@ func TestChangesMadeMeanwhileAreKept(t *testing.T) {
 		_ = writeRequest(path, r)
 		return answer(`{"operations":[]}`), "", 0, nil
 	}
-	if _, err := job(path, run).do(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	if n := len(read(t, path)["notifications"].([]any)); n != 2 {
-		t.Errorf("notifications: %d, want 2", n)
-	}
+	_, err := job(path, run).do(context.Background())
+	require.Nil(t, err)
+	assert.Size(t, 2, read(t, path)["notifications"], "notifications")
 }
 
 func TestAMissingRequestIsAnError(t *testing.T) {
 	var calls []call
-	if _, err := job(filepath.Join(t.TempDir(), "nope.json"), fake("", "", 0, nil, &calls)).do(context.Background()); err == nil {
-		t.Error("no error")
-	}
+	_, err := job(filepath.Join(t.TempDir(), "nope.json"), fake("", "", 0, nil, &calls)).do(context.Background())
+	assert.NotNil(t, err)
 }
 
 func TestTailKeepsTheEndWithoutCuttingCharacters(t *testing.T) {
-	if got := tail("  short  ", 10); got != "short" {
-		t.Errorf("short: %q", got)
-	}
-	if got := tail("abcdefghij", 4); got != "...ghij" {
-		t.Errorf("long: %q", got)
-	}
+	assert.Equal(t, "short", tail("  short  ", 10))
+	assert.Equal(t, "...ghij", tail("abcdefghij", 4))
 	// "ñ" is two bytes: a cut in its middle moves after it
-	if got := tail("xxñyy", 3); got != "...yy" {
-		t.Errorf("multibyte: %q", got)
-	}
+	assert.Equal(t, "...yy", tail("xxñyy", 3))
 }
 
 func TestDataRepoIsTwoFoldersAboveRequests(t *testing.T) {
 	path := filepath.Join("base", "data", ".source", "requests", "REQ-1.json")
-	if got := dataRepo(path); got != filepath.Join("base", "data") {
-		t.Errorf("dataRepo: %s", got)
-	}
+	assert.Equal(t, filepath.Join("base", "data"), dataRepo(path))
 }
